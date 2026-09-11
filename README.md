@@ -2,6 +2,8 @@
 
 **WinTuner** is a Windows utility designed to provide a simple graphical interface for system maintenance, optimization and diagnostics.
 
+please use file "WinTuner-Debug.exe"
+
 > 🚧 **Project status:** Early development
 
 ## ✨ Features
