@@ -494,6 +494,7 @@ goto MENU
 :: SECCIONES FUTURAS
 :: ============================================================
 
+```bat
 :LIMPIEZA
 cls
 echo.
@@ -501,10 +502,346 @@ echo  ==========================================================
 echo                         LIMPIEZA
 echo  ==========================================================
 echo.
-echo  Esta seccion esta en construccion.
+echo  [1] Archivos temporales de usuario
+echo  [2] Archivos temporales de Windows
+echo  [3] Papelera de reciclaje
+echo  [4] Cache de miniaturas
+echo  [5] Cache de DirectX Shader
+echo  [6] Limpieza de Windows Update
+echo  [7] LIMPIAR TODO
+echo  [8] Volver
+echo.
+set /p LIMPIAR_OPCION="  Selecciona una opcion: "
+
+if "%LIMPIAR_OPCION%"=="1" goto LIMPIAR_TEMP_USUARIO
+if "%LIMPIAR_OPCION%"=="2" goto LIMPIAR_TEMP_WINDOWS
+if "%LIMPIAR_OPCION%"=="3" goto LIMPIAR_PAPELERA
+if "%LIMPIAR_OPCION%"=="4" goto LIMPIAR_MINIATURAS
+if "%LIMPIAR_OPCION%"=="5" goto LIMPIAR_SHADER
+if "%LIMPIAR_OPCION%"=="6" goto LIMPIAR_UPDATE
+if "%LIMPIAR_OPCION%"=="7" goto LIMPIAR_TODO
+if "%LIMPIAR_OPCION%"=="8" goto MENU
+
+echo.
+echo  [!] Opcion no valida.
+timeout /t 2 >nul
+goto LIMPIEZA
+
+
+:LIMPIAR_TEMP_USUARIO
+cls
+echo.
+echo  ==========================================================
+echo             TEMPORALES DEL USUARIO
+echo  ==========================================================
+echo.
+echo  Se eliminaran archivos temporales de:
+echo  %TEMP%
+echo.
+choice /c SN /n /m "  ¿Quieres continuar? [S/N]: "
+
+if errorlevel 2 goto LIMPIEZA
+
+echo.
+echo  Limpiando archivos temporales...
+
+del /f /s /q "%TEMP%\*" >nul 2>&1
+for /d %%D in ("%TEMP%\*") do rd /s /q "%%D" >nul 2>&1
+
+echo.
+echo  [OK] Temporales del usuario limpiados.
 echo.
 pause
-goto MENU
+goto LIMPIEZA
+
+
+:LIMPIAR_TEMP_WINDOWS
+cls
+echo.
+echo  ==========================================================
+echo             TEMPORALES DE WINDOWS
+echo  ==========================================================
+echo.
+echo  Se limpiara:
+echo  C:\Windows\Temp
+echo.
+choice /c SN /n /m "  ¿Quieres continuar? [S/N]: "
+
+if errorlevel 2 goto LIMPIEZA
+
+echo.
+echo  Comprobando privilegios de administrador...
+call :ADMIN_CHECK
+
+echo.
+echo  Limpiando temporales de Windows...
+
+del /f /s /q "C:\Windows\Temp\*" >nul 2>&1
+for /d %%D in ("C:\Windows\Temp\*") do rd /s /q "%%D" >nul 2>&1
+
+echo.
+echo  [OK] Temporales de Windows limpiados.
+echo.
+pause
+goto LIMPIEZA
+
+
+:LIMPIAR_PAPELERA
+cls
+echo.
+echo  ==========================================================
+echo              PAPELERA DE RECICLAJE
+echo  ==========================================================
+echo.
+echo  ATENCION:
+echo.
+echo  Los archivos de la Papelera se eliminaran
+echo  DEFINITIVAMENTE y no podran recuperarse
+echo  desde la Papelera de reciclaje.
+echo.
+choice /c SN /n /m "  ¿Quieres vaciar la Papelera? [S/N]: "
+
+if errorlevel 2 (
+    echo.
+    echo  [!] Papelera conservada.
+    pause
+    goto LIMPIEZA
+)
+
+echo.
+echo  Vaciando Papelera de reciclaje...
+
+powershell -NoProfile -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"
+
+echo.
+echo  [OK] Papelera vaciada.
+echo.
+pause
+goto LIMPIEZA
+
+
+:LIMPIAR_MINIATURAS
+cls
+echo.
+echo  ==========================================================
+echo                 CACHE DE MINIATURAS
+echo  ==========================================================
+echo.
+echo  Windows volvera a crear estas miniaturas cuando
+echo  sean necesarias.
+echo.
+choice /c SN /n /m "  ¿Quieres continuar? [S/N]: "
+
+if errorlevel 2 goto LIMPIEZA
+
+echo.
+echo  Limpiando cache de miniaturas...
+
+taskkill /f /im explorer.exe >nul 2>&1
+
+del /f /q "%LocalAppData%\Microsoft\Windows\Explorer\thumbcache_*.db" >nul 2>&1
+
+start explorer.exe
+
+echo.
+echo  [OK] Cache de miniaturas limpiada.
+echo.
+pause
+goto LIMPIEZA
+
+
+:LIMPIAR_SHADER
+cls
+echo.
+echo  ==========================================================
+echo                 CACHE DE DIRECTX SHADER
+echo  ==========================================================
+echo.
+echo  Windows y los juegos pueden volver a generar esta cache.
+echo.
+choice /c SN /n /m "  ¿Quieres continuar? [S/N]: "
+
+if errorlevel 2 goto LIMPIEZA
+
+echo.
+echo  Limpiando DirectX Shader Cache...
+
+del /f /s /q "%LocalAppData%\D3DSCache\*" >nul 2>&1
+for /d %%D in ("%LocalAppData%\D3DSCache\*") do rd /s /q "%%D" >nul 2>&1
+
+echo.
+echo  [OK] DirectX Shader Cache limpiada.
+echo.
+pause
+goto LIMPIEZA
+
+
+:LIMPIAR_UPDATE
+cls
+echo.
+echo  ==========================================================
+echo                 WINDOWS UPDATE
+echo  ==========================================================
+echo.
+echo  Se limpiaran archivos temporales de Windows Update.
+echo.
+echo  Esta operacion requiere administrador.
+echo.
+choice /c SN /n /m "  ¿Quieres continuar? [S/N]: "
+
+if errorlevel 2 goto LIMPIEZA
+
+call :ADMIN_CHECK
+
+echo.
+echo  Deteniendo Windows Update...
+
+net stop wuauserv >nul 2>&1
+
+echo  Limpiando cache temporal de Windows Update...
+
+del /f /s /q "C:\Windows\SoftwareDistribution\Download\*" >nul 2>&1
+for /d %%D in ("C:\Windows\SoftwareDistribution\Download\*") do rd /s /q "%%D" >nul 2>&1
+
+echo.
+echo  Iniciando Windows Update...
+
+net start wuauserv >nul 2>&1
+
+echo.
+echo  [OK] Limpieza de Windows Update completada.
+echo.
+pause
+goto LIMPIEZA
+
+
+:LIMPIAR_TODO
+cls
+echo.
+echo  ==========================================================
+echo                    LIMPIAR TODO
+echo  ==========================================================
+echo.
+echo  Se ejecutaran las siguientes limpiezas:
+echo.
+echo  [OK] Temporales del usuario
+echo  [OK] Temporales de Windows
+echo  [OK] Cache de miniaturas
+echo  [OK] DirectX Shader Cache
+echo  [OK] Cache temporal de Windows Update
+echo  [?] Papelera (pedira confirmacion)
+echo.
+choice /c SN /n /m "  ¿Quieres iniciar la limpieza? [S/N]: "
+
+if errorlevel 2 goto LIMPIEZA
+
+echo.
+echo  ==========================================================
+echo              TEMPORALES DEL USUARIO
+echo  ==========================================================
+echo.
+
+del /f /s /q "%TEMP%\*" >nul 2>&1
+for /d %%D in ("%TEMP%\*") do rd /s /q "%%D" >nul 2>&1
+
+echo  [OK] Temporales del usuario.
+
+
+echo.
+echo  ==========================================================
+echo              TEMPORALES DE WINDOWS
+echo  ==========================================================
+echo.
+
+call :ADMIN_CHECK
+
+del /f /s /q "C:\Windows\Temp\*" >nul 2>&1
+for /d %%D in ("C:\Windows\Temp\*") do rd /s /q "%%D" >nul 2>&1
+
+echo  [OK] Temporales de Windows.
+
+
+echo.
+echo  ==========================================================
+echo                CACHE DE MINIATURAS
+echo  ==========================================================
+echo.
+
+taskkill /f /im explorer.exe >nul 2>&1
+del /f /q "%LocalAppData%\Microsoft\Windows\Explorer\thumbcache_*.db" >nul 2>&1
+start explorer.exe
+
+echo  [OK] Cache de miniaturas.
+
+
+echo.
+echo  ==========================================================
+echo                DIRECTX SHADER CACHE
+echo  ==========================================================
+echo.
+
+del /f /s /q "%LocalAppData%\D3DSCache\*" >nul 2>&1
+for /d %%D in ("%LocalAppData%\D3DSCache\*") do rd /s /q "%%D" >nul 2>&1
+
+echo  [OK] DirectX Shader Cache.
+
+
+echo.
+echo  ==========================================================
+echo                 WINDOWS UPDATE
+echo  ==========================================================
+echo.
+
+net stop wuauserv >nul 2>&1
+
+del /f /s /q "C:\Windows\SoftwareDistribution\Download\*" >nul 2>&1
+for /d %%D in ("C:\Windows\SoftwareDistribution\Download\*") do rd /s /q "%%D" >nul 2>&1
+
+net start wuauserv >nul 2>&1
+
+echo  [OK] Cache de Windows Update.
+
+
+echo.
+echo  ==========================================================
+echo                  PAPELERA DE RECICLAJE
+echo  ==========================================================
+echo.
+echo  ATENCION: Esta accion elimina definitivamente
+echo  todos los archivos que haya en la Papelera.
+echo.
+
+choice /c SN /n /m "  ¿Quieres vaciar la Papelera? [S/N]: "
+
+if errorlevel 2 (
+    echo.
+    echo  [!] Papelera conservada.
+    goto LIMPIEZA_COMPLETA
+)
+
+echo.
+echo  Vaciando Papelera...
+
+powershell -NoProfile -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"
+
+echo  [OK] Papelera vaciada.
+
+
+:LIMPIEZA_COMPLETA
+echo.
+echo  ==========================================================
+echo                  LIMPIEZA COMPLETADA
+echo  ==========================================================
+echo.
+echo  [OK] WinTuner ha terminado la limpieza.
+echo.
+pause
+goto LIMPIEZA
+```
+
+**Importante:** este bloque presupone que ya tienes tu `:ADMIN_CHECK` en el BAT, como en el código que me pasaste.
+
+Y una cosa buena: **“Limpiar todo” no borra la Papelera automáticamente**. Siempre te preguntará antes. 🗑️
 
 
 :RED

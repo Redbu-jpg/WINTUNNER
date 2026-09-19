@@ -1,0 +1,7 @@
+# Bloqueo total de la carpeta admin en GitHub
+admin/
+admin/*
+
+# Por seguridad, si creaste algún RAR o ZIP de esa carpeta, tampoco lo subas
+admin.rar
+admin.zip
